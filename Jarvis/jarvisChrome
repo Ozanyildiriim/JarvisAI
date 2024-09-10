@@ -1,0 +1,104 @@
+import pyttsx3
+import datetime
+import speech_recognition as sr
+import webbrowser as wb
+import os
+import time
+
+# Ses motoru başlatma
+engine = pyttsx3.init()
+
+# Erkek sesi seçme
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)  # Erkek ses, 0 genelde erkek oluyor, 1 kadın ses olabilir
+engine.setProperty('rate', 150)  # Konuşma hızı
+
+def speak(audio):
+    engine.say(audio)
+    engine.runAndWait()
+
+def takeCommand():
+    """Kullanıcıdan sesli komut al ve yazdır"""
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        r.pause_threshold = 1
+        r.adjust_for_ambient_noise(source, duration=1)
+        audio = r.listen(source)
+
+    try:
+        print("Recognizing...")
+        query = r.recognize_google(audio, language='en-in')
+        print(f"User said: {query}")  # Komutu terminale yazdırır
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Say that again please...")
+        return "None"
+    
+    return query.lower()
+
+def jarvis_listen_for_activation():
+    """Jarvis'in ismini duyduğunda cevap vermesi için sürekli dinleme"""
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Waiting for wake word 'Jarvis'...")
+        r.pause_threshold = 1
+        r.adjust_for_ambient_noise(source, duration=1)
+        audio = r.listen(source)
+
+    try:
+        query = r.recognize_google(audio, language='en-in')
+        print(f"Wake word detected: {query}")  # Dinlenen aktivasyon kelimesini yazdırır
+        if "jarvis" in query.lower():
+            return True
+        if "open" in query.lower():
+            return True
+        return False
+    except:
+        return False
+
+def open_url_in_chrome(url):
+    """Google Chrome'da URL aç"""
+    chromepath = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+    wb.get(chromepath).open_new_tab(url)
+
+def wishme():
+    """Selamlama mesajı"""
+    speak("Jarvis at your service. How can I assist you?")
+
+if __name__ == "__main__":
+    while True:
+        # Jarvis'in ismini duyup aktifleşmesi için sürekli dinleme
+        if jarvis_listen_for_activation():
+            wishme()
+
+            # Komut alma döngüsü
+            timeout_start = time.time()  # Zaman aşımını başlat
+            while True:
+                query = takeCommand()
+
+                # 7. bölüm için komut
+                if '7th episode' in query:
+                    speak("Opening the seventh episode.")
+                    open_url_in_chrome('https://zqwqz.org/game-of-thrones/sezon-2/bolum-7')  # 7. bölüm URL'sini buraya koy
+                    timeout_start = time.time()  # Zamanı sıfırla
+
+                # 8. bölüm için komut
+                elif 'open the 8th episode' in query:
+                    speak("Opening the eighth episode.")
+                    open_url_in_chrome('https://zqwqz.org/game-of-thrones/sezon-2/bolum-8')  # 8. bölüm URL'sini buraya koy
+                    timeout_start = time.time()  # Zamanı sıfırla
+                
+                elif 'goodbye' in query or 'exit' in query:
+                    speak("Goodbye!")
+                    quit()
+
+                # Zaman aşımı kontrolü, 15 saniye komut alınmazsa tekrar Jarvis ismi bekleme moduna döner
+                if time.time() > timeout_start + 15:
+                    print("No command detected, returning to listening mode.")
+                    break  # Döngüden çıkar ve tekrar "Jarvis" komutunu bekler
+
+                else:
+                    print(f"Command: {query}")  # Alınan komutu yazdırır
+                    speak("I am listening, please give me a command.")
+                    timeout_start = time.time()  # Zamanı sıfırla
